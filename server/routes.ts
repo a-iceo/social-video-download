@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import ytdl from "@distube/ytdl-core";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -13,7 +14,31 @@ export async function registerRoutes(
     try {
       const { url } = api.downloads.process.input.parse(req.body);
 
-      // --- COBALT API INTEGRATION (Primary - Free) ---
+      // --- YOUTUBE INTEGRATION (Primary for YT) ---
+      if (ytdl.validateURL(url)) {
+        try {
+          const info = await ytdl.getInfo(url);
+          const format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'audioandvideo' });
+          
+          if (format && format.url) {
+            const processedResult = {
+              originalUrl: url,
+              platform: "youtube",
+              status: "completed",
+              title: info.videoDetails.title || `Video (${new Date().toLocaleTimeString()})`,
+              thumbnailUrl: info.videoDetails.thumbnails[0]?.url || "https://placehold.co/600x400/1a1a1a/purple?text=Video+Found",
+              videoUrl: format.url,
+              format: "mp4"
+            };
+            const download = await storage.createDownload(processedResult);
+            return res.json(download);
+          }
+        } catch (e) {
+          console.error("YTDL failed, falling back to Cobalt...", e);
+        }
+      }
+
+      // --- COBALT API INTEGRATION (Primary for others / Fallback for YT) ---
       try {
         const cobaltResponse = await fetch("https://api.cobalt.tools/api/json", {
           method: "POST",
