@@ -1,12 +1,16 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
-import * as schema from "@shared/schema";
+// import { drizzle } from "drizzle-orm/node-postgres";
+// import pg from "pg";
+// import * as schema from "@shared/schema";
 
-const { Pool } = pg;
+// const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  console.warn("DATABASE_URL not set. Using in-memory storage fallback.");
-}
+// if (!process.env.DATABASE_URL) {
+//   console.warn("DATABASE_URL not set. Using in-memory storage fallback.");
+// }
 
-export const pool = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL }) : null;
-export const db = pool ? drizzle(pool, { schema }) : null;
+// export const pool = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL }) : null;
+// export const db = pool ? drizzle(pool, { schema }) : null;
+
+// FORCE NULL FOR VERCEL STABILITY to prevent 'pg' native module crashes
+export const pool = null;
+export const db = null;
