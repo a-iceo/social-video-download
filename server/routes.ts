@@ -60,7 +60,8 @@ export async function registerRoutes(
       }
 
       // --- YOUTUBE INTEGRATION (Fallback for YT) ---
-      // Lazy load ytdl to prevent startup crashes in serverless
+      // DISABLED TEMPORARILY FOR VERCEL STABILITY
+      /*
       try {
         const ytdlModule = await import("@distube/ytdl-core");
         const ytdl = ytdlModule.default || ytdlModule;
@@ -91,6 +92,7 @@ export async function registerRoutes(
       } catch (importErr) {
         console.error("Failed to lazy load ytdl-core:", importErr);
       }
+      */
 
       // --- REAL RAPIDAPI INTEGRATION (Fallback) ---
       const rapidApiKey = process.env.RAPIDAPI_KEY;
