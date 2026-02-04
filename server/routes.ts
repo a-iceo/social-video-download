@@ -3,7 +3,6 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import ytdl from "@distube/ytdl-core";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -61,28 +60,36 @@ export async function registerRoutes(
       }
 
       // --- YOUTUBE INTEGRATION (Fallback for YT) ---
-      if (ytdl.validateURL(url)) {
-        try {
-          console.log("Attempting YTDL fallback...");
-          const info = await ytdl.getInfo(url);
-          const format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'audioandvideo' });
-          
-          if (format && format.url) {
-            const processedResult = {
-              originalUrl: url,
-              platform: "youtube",
-              status: "completed",
-              title: info.videoDetails.title || `Video (${new Date().toLocaleTimeString()})`,
-              thumbnailUrl: info.videoDetails.thumbnails[0]?.url || "https://placehold.co/600x400/1a1a1a/purple?text=Video+Found",
-              videoUrl: format.url,
-              format: "mp4"
-            };
-            const download = await storage.createDownload(processedResult);
-            return res.json(download);
+      // Lazy load ytdl to prevent startup crashes in serverless
+      try {
+        const ytdlModule = await import("@distube/ytdl-core");
+        const ytdl = ytdlModule.default || ytdlModule;
+        
+        if (ytdl.validateURL(url)) {
+          try {
+            console.log("Attempting YTDL fallback...");
+            const info = await ytdl.getInfo(url);
+            const format = ytdl.chooseFormat(info.formats, { quality: 'highest', filter: 'audioandvideo' });
+            
+            if (format && format.url) {
+              const processedResult = {
+                originalUrl: url,
+                platform: "youtube",
+                status: "completed",
+                title: info.videoDetails.title || `Video (${new Date().toLocaleTimeString()})`,
+                thumbnailUrl: info.videoDetails.thumbnails[0]?.url || "https://placehold.co/600x400/1a1a1a/purple?text=Video+Found",
+                videoUrl: format.url,
+                format: "mp4"
+              };
+              const download = await storage.createDownload(processedResult);
+              return res.json(download);
+            }
+          } catch (e) {
+            console.error("YTDL failed as well...", e);
           }
-        } catch (e) {
-          console.error("YTDL failed as well...", e);
         }
+      } catch (importErr) {
+        console.error("Failed to lazy load ytdl-core:", importErr);
       }
 
       // --- REAL RAPIDAPI INTEGRATION (Fallback) ---
@@ -137,18 +144,22 @@ export async function registerRoutes(
     res.json(history);
   });
 
-  // Seed some initial history if empty
-  const existing = await storage.getDownloads();
-  if (existing.length === 0) {
-    await storage.createDownload({
-      originalUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-      platform: "youtube",
-      status: "completed",
-      title: "Rick Astley - Never Gonna Give You Up",
-      thumbnailUrl: "https://placehold.co/600x400/1a1a1a/purple?text=Rick+Roll",
-      videoUrl: "#",
-      format: "mp4"
-    });
+  // Seed some initial history if empty - Wrapped in try/catch for safety
+  try {
+    const existing = await storage.getDownloads();
+    if (existing.length === 0) {
+      await storage.createDownload({
+        originalUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        platform: "youtube",
+        status: "completed",
+        title: "Rick Astley - Never Gonna Give You Up",
+        thumbnailUrl: "https://placehold.co/600x400/1a1a1a/purple?text=Rick+Roll",
+        videoUrl: "#",
+        format: "mp4"
+      });
+    }
+  } catch (err) {
+    console.warn("Failed to seed initial history (non-fatal):", err);
   }
 
   return httpServer;
