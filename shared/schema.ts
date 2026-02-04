@@ -1,31 +1,42 @@
-import { pgTable, text, serial, timestamp, boolean } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+
 import { z } from "zod";
 
-export const downloads = pgTable("downloads", {
-  id: serial("id").primaryKey(),
-  originalUrl: text("original_url").notNull(),
-  platform: text("platform").notNull(), // 'youtube', 'tiktok', 'instagram', 'other'
-  videoUrl: text("video_url"), // The direct download link (if available/cached)
-  thumbnailUrl: text("thumbnail_url"),
-  title: text("title"),
-  format: text("format"), // 'mp4', 'mp3', etc.
-  status: text("status").notNull().default("pending"), // 'pending', 'completed', 'failed'
-  createdAt: timestamp("created_at").defaultNow(),
+// Mock schema to avoid drizzle dependency
+export const downloads = {
+  id: "id",
+  originalUrl: "original_url",
+  platform: "platform",
+  videoUrl: "video_url",
+  thumbnailUrl: "thumbnail_url",
+  title: "title",
+  format: "format",
+  status: "status",
+  createdAt: "created_at",
+};
+
+export const insertDownloadSchema = z.object({
+  originalUrl: z.string().url(),
+  platform: z.string(),
+  status: z.string().default("pending"),
+  title: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
+  videoUrl: z.string().optional(),
+  format: z.string().optional()
 });
 
-export const insertDownloadSchema = createInsertSchema(downloads).pick({
-  originalUrl: true,
-  platform: true,
-  status: true,
-  title: true,
-  thumbnailUrl: true,
-  videoUrl: true,
-  format: true
-});
+export type Download = {
+  id: number;
+  originalUrl: string;
+  platform: string;
+  videoUrl?: string | null;
+  thumbnailUrl?: string | null;
+  title?: string | null;
+  format?: string | null;
+  status: string;
+  createdAt?: Date | null;
+};
 
-export type Download = typeof downloads.$inferSelect;
 export type InsertDownload = z.infer<typeof insertDownloadSchema>;
 
-export type CreateDownloadRequest = { url: string }; // Simplified request
+export type CreateDownloadRequest = { url: string }; 
 export type DownloadResponse = Download;
