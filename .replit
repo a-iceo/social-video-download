@@ -37,3 +37,8 @@ author = "agent"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[userenv]
+
+[userenv.shared]
+RAPIDAPI_KEY = "e51a0560aamshfbb8b92df363e93p100bc3jsn7290b209b51e"
