@@ -10,10 +10,17 @@ interface DownloadCardProps {
 export function DownloadCard({ download, index }: DownloadCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="group relative bg-card border border-white/5 hover:border-primary/50 rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 h-full flex flex-col"
+      layout
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.9, y: 20 }}
+      transition={{ 
+        type: "spring",
+        stiffness: 100,
+        damping: 15,
+        delay: index * 0.05 
+      }}
+      className="group relative bg-card/60 backdrop-blur-md border border-white/5 hover:border-primary/50 rounded-3xl overflow-hidden hover:shadow-[0_0_40px_rgba(var(--primary),0.1)] transition-all duration-500 h-full flex flex-col shadow-xl"
     >
       {/* Thumbnail */}
       <div className="relative aspect-video bg-black/50 overflow-hidden">
