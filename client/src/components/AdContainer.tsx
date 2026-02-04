@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 interface AdContainerProps {
   className?: string;
@@ -6,7 +7,33 @@ interface AdContainerProps {
 }
 
 export function AdContainer({ className = "", size = "medium" }: AdContainerProps) {
-  // This is a placeholder for Adsterra or other ad networks
+  const [consent, setConsent] = useState(false);
+
+  useEffect(() => {
+    const checkConsent = () => {
+      setConsent(localStorage.getItem("cookie-consent") === "true");
+    };
+    checkConsent();
+    window.addEventListener("storage", checkConsent);
+    return () => window.removeEventListener("storage", checkConsent);
+  }, []);
+
+  useEffect(() => {
+    if (consent) {
+      // Inject Adsterra Script
+      const script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src = "//www.highperformanceformat.com/8c4e7f9a1b2c3d4e5f6g7h8i9j0k1l2m/invoke.js"; // Replace with real ID
+      script.async = true;
+      script.dataset.strategy = "lazyOnload";
+      
+      const container = document.getElementById(`ad-slot-${size}`);
+      if (container) {
+        container.appendChild(script);
+      }
+    }
+  }, [consent, size]);
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -23,12 +50,14 @@ export function AdContainer({ className = "", size = "medium" }: AdContainerProp
       <span className="text-xs uppercase tracking-widest text-muted-foreground/50 font-bold mb-2 border border-white/10 px-2 py-0.5 rounded">
         Advertisement
       </span>
-      <p className="text-muted-foreground/30 text-sm max-w-[200px]">
-        Support us by disabling adblock
-      </p>
+      {!consent && (
+        <p className="text-muted-foreground/30 text-sm max-w-[200px] relative z-20">
+          Please accept cookies to see personalized offers
+        </p>
+      )}
 
       {/* Ad Script Injection Point */}
-      <div id={`ad-slot-${size}`} className="absolute inset-0 z-10" />
+      <div id={`ad-slot-${size}`} className="absolute inset-0 z-10 flex items-center justify-center" />
     </motion.div>
   );
 }
