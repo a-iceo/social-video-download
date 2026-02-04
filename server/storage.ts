@@ -21,4 +21,25 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export class MemStorage implements IStorage {
+  private downloads: Download[] = [];
+  private idCounter = 1;
+
+  async createDownload(insertDownload: InsertDownload): Promise<Download> {
+    const newDownload: Download = {
+      ...insertDownload,
+      id: this.idCounter++,
+      createdAt: new Date(),
+    };
+    this.downloads.push(newDownload);
+    return newDownload;
+  }
+
+  async getDownloads(): Promise<Download[]> {
+    return this.downloads
+      .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
+      .slice(0, 10);
+  }
+}
+
+export const storage = db ? new DatabaseStorage() : new MemStorage();
